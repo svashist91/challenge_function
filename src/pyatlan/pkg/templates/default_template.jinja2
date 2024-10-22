@@ -1,0 +1,205 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: {{ pkg.name }}
+spec:
+  templates:
+    - name: main
+      inputs:
+        parameters:
+        {%- if pkg.name %}
+            - name: output_prefix
+              value: {{ pkg.name }}
+{%-  for name, property in pkg.ui_config.properties.items()  %}
+            - name: {{ name }}
+              value: {{ property.ui.parameter_value}}
+{%- endfor %}
+            {%- if pkg.ui_config.credentials %}
+            - name: execution-script
+              value: |
+                if state == ExecutionState.API_FAIL and (response.status_code >= 500 or response.status_code in {400}):
+                  LOGGER.debug('Heracles is unavailable. Performing retry with back-off')
+                  failure_handler = FailureHandler.RETRY
+                if state == ExecutionState.OUTPUT_PROCESS:
+                  output = json.loads(output)
+                if state == ExecutionState.API_POST:
+                  stop = True
+            {%- endif %}
+        {%- endif %}
+{%- set ns = namespace(has_s3=false) %}
+{%-  for name, property in pkg.ui_config.properties.items()  %}
+    {%- if property.ui.s3_artifact %}
+        {%- if not ns.has_s3 %}
+        artifacts:
+        {%- endif %}
+        {%-  set ns.has_s3 = true %}
+            - name: {{ name }}_s3
+              path: "/tmp/{{ name }}/{% raw %}{{inputs.parameters.{% endraw %}{{ name }}{% raw %}}}{% endraw %}"
+              s3:
+                key: "{% raw %}{{inputs.parameters.{% endraw %}{{ name }}{% raw %}}}{% endraw %}"
+    {%- endif  %}
+{%- endfor %}
+{%- if not ns.has_s3 %}
+        artifacts: []
+{% endif %}
+{%-  for name, value in pkg.outputs.items()  %}
+    {%- if loop.first %}
+      outputs:
+        artifacts:
+    {%- endif %}
+         - name: {{ name }}
+           path: {{ value }}
+{%- endfor %}
+{%- if pkg.ui_config.credentials %}
+      volumes:
+        - name: credentials
+          emptyDir: { }
+{%- endif %}
+      container:
+    {%- if pkg.ui_config.credentials %}
+        volumeMounts:
+          - name: credentials
+            mountPath: /tmp/credentials
+    {%- endif %}
+        image: {{ pkg.container_image }}
+        imagePullPolicy: {{ pkg.container_image_pull_policy.value }}
+        command:
+          - {{ pkg.container_command[0] }}
+        args:
+            {%- for cmd in pkg.container_command[1:] %}
+          - {{ cmd }}
+            {%- endfor %}
+        env:
+          - name: ATLAN_BASE_URL
+            value: INTERNAL
+          - name: ATLAN_USER_ID
+            value: "{% raw %}{{=sprig.dig('labels', 'workflows', 'argoproj', 'io/creator', '', workflow)}}{% endraw %}"
+          - name: X_ATLAN_AGENT
+            value: workflow
+          - name: X_ATLAN_AGENT_ID
+            value: "{% raw %}{{workflow.name}}{% endraw %}"
+          - name: X_ATLAN_AGENT_PACKAGE_NAME
+            value: "{% raw %}{{=sprig.dig('annotations', 'package', 'argoproj', 'io/name', '', workflow)}}{% endraw %}"
+          - name: X_ATLAN_AGENT_WORKFLOW_ID
+            value: "{% raw %}{{=sprig.dig('labels', 'workflows', 'argoproj', 'io/workflow-template', '', workflow)}}{% endraw %}"
+          - name: AWS_S3_BUCKET_NAME
+            valueFrom:
+              configMapKeyRef:
+                key: bucket
+                name: atlan-defaults
+          - name: AWS_S3_REGION
+            valueFrom:
+              configMapKeyRef:
+                key: region
+                name: atlan-defaults
+          - name: CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: argo-client-creds
+                key: login
+          - name: CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: argo-client-creds
+                key: password
+          - name: SMTP_HOST
+            valueFrom:
+              secretKeyRef:
+                key: host
+                name: support-smtp-creds
+          - name: SMTP_PORT
+            valueFrom:
+              secretKeyRef:
+                key: port
+                name: support-smtp-creds
+          - name: SMTP_FROM
+            valueFrom:
+              secretKeyRef:
+                key: from
+                name: support-smtp-creds
+          - name: SMTP_USER
+            valueFrom:
+              secretKeyRef:
+                key: login
+                name: support-smtp-creds
+          - name: SMTP_PASS
+            valueFrom:
+              secretKeyRef:
+                key: smtp_password
+                name: workflow-parameter-store
+{%-  for name, property in pkg.ui_config.properties.items()  %}
+          - name: {{ name | upper }}
+            value: "{{property.ui.to_env(name)}}"
+{%- endfor %}
+          - name: NESTED_CONFIG
+            value: |-
+             {
+{%-  for name, property in pkg.ui_config.properties.items()  %}
+             "{{ name }}": {{ property.ui.to_nested(name) }}{% if not loop.last %},{% endif %}
+{%- endfor %}
+             }
+{%- if pkg.ui_config.credentials %}
+    {%- raw %}
+      initContainers:
+        - name: fetch-credentials
+          image: ghcr.io/atlanhq/rest-master:165b7e5
+          command: [ "python3", "main.py" ]
+          env:
+            - name: OAUTHLIB_INSECURE_TRANSPORT
+              value: "1"
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: "argo-client-creds"
+                  key: "login"
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: "argo-client-creds"
+                  key: "password"
+            - name: TOKEN_URL
+              valueFrom:
+                secretKeyRef:
+                  name: "argo-client-creds"
+                  key: "host"
+          mirrorVolumeMounts: true
+          args: [
+            "GET",
+    {%- endraw %}
+            "http://heracles-service.heracles.svc.cluster.local/credentials/{{'{{'}}inputs.parameters.{{ pkg.ui_config.credentials[0] }}{{'}}'}}/use",
+    {%- raw %}
+            "--raw-input",
+            "{}",
+            "--raw-input-file-pattern",
+            "",
+            "--raw-input-file-sort",
+            "",
+            "--raw-input-multiline",
+            "f",
+            "--execution-script",
+            "{{inputs.parameters.execution-script}}",
+            "--raw-input-paginate",
+            "0",
+            "--auth-type",
+            "oauth2",
+            "--auth-oauth2-type",
+            "client_credentials",
+            "--auth-oauth2-impersonate-user",
+            "{{=sprig.ternary(sprig.dig('labels', 'workflows', 'argoproj', 'io/creator', '', workflow), '', 'true' == inputs.parameters['impersonate'])}}",
+            "--auth-oauth2-client-credentials-client-id",
+            "CLIENT_ID",
+            "--auth-oauth2-client-credentials-secret",
+            "CLIENT_SECRET",
+            "--auth-oauth2-client-credentials-token-url",
+            "TOKEN_URL",
+            "--output-chunk-size",
+            "0",
+            "--output-file-prefix",
+            "/tmp/credentials",
+            "--pagination-wait-time",
+            "0",
+            "--max-retries",
+            "10",
+          ]
+    {%- endraw %}
+{%- endif %}

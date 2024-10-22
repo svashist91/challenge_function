@@ -1,0 +1,222 @@
+
+    class Attributes(AtlanObject):
+        {%- for attribute_def in entity_def.attribute_defs %}
+        {%- set type = attribute_def.typeName | get_type %}
+        {%- set default_value = "''" if attribute_def.name == "qualifiedName" else "None" %}
+        {{attribute_def.name | to_snake_case }}: Optional[{{type}}]= Field(default={{ default_value }}, description='')
+        {%- endfor %}
+        {%- for attribute_def in entity_def.relationship_attribute_defs %}
+        {%- set type = attribute_def.typeName | get_type %}
+        {{attribute_def.name | to_snake_case }}: {% if attribute_def.isOptional %}Optional[{% endif %}{{type}}{% if attribute_def.isOptional %}]{% endif %} = Field({% if attribute_def.isOptional %}default=None,{% endif %} description='') # relationship
+        {%- endfor %}
+
+        def validate_required(self):
+            pass
+
+    TYPE_NAME: ClassVar[KeywordTextField] = InternalKeywordTextField(
+        "typeName", "__typeName.keyword", "__typeName", "__typeName"
+    )
+    """Type of the asset. For example Table, Column, and so on."""
+
+    GUID: ClassVar[KeywordField] = InternalKeywordField("guid", "__guid", "__guid")
+    """Globally unique identifier (GUID) of any object in Atlan."""
+
+    CREATED_BY: ClassVar[KeywordField] = InternalKeywordField(
+        "createdBy", "__createdBy", "__createdBy"
+    )
+    """Atlan user who created this asset."""
+
+    UPDATED_BY: ClassVar[KeywordField] = InternalKeywordField(
+        "updatedBy", "__modifiedBy", "__modifiedBy"
+    )
+    """Atlan user who last updated the asset."""
+
+    STATUS: ClassVar[KeywordField] = InternalKeywordField(
+        "status", "__state", "__state"
+    )
+    """Asset status in Atlan (active vs deleted)."""
+
+    ATLAN_TAGS: ClassVar[KeywordTextField] = InternalKeywordTextField(
+        "classificationNames",
+        "__traitNames",
+        "__classificationsText",
+        "__classificationNames",
+    )
+    """
+    All directly-assigned Atlan tags that exist on an asset, searchable by internal hashed-string ID of the Atlan tag.
+    """
+
+    PROPAGATED_ATLAN_TAGS: ClassVar[KeywordTextField] = InternalKeywordTextField(
+        "classificationNames",
+        "__propagatedTraitNames",
+        "__classificationsText",
+        "__propagatedClassificationNames",
+    )
+    """All propagated Atlan tags that exist on an asset, searchable by internal hashed-string ID of the Atlan tag."""
+
+    ASSIGNED_TERMS: ClassVar[KeywordTextField] = InternalKeywordTextField(
+        "meanings", "__meanings", "__meaningsText", "__meanings"
+    )
+    """All terms attached to an asset, searchable by the term's qualifiedName."""
+
+    SUPER_TYPE_NAMES: ClassVar[KeywordTextField] = InternalKeywordTextField(
+        "typeName", "__superTypeNames.keyword", "__superTypeNames", "__superTypeNames"
+    )
+    """All super types of an asset."""
+
+    CREATE_TIME: ClassVar[NumericField] = InternalNumericField(
+        "createTime", "__timestamp", "__timestamp"
+    )
+    """Time (in milliseconds) when the asset was created."""
+
+    UPDATE_TIME: ClassVar[NumericField] = InternalNumericField(
+        "updateTime", "__modificationTimestamp", "__modificationTimestamp"
+    )
+    """Time (in milliseconds) when the asset was last updated."""
+
+    QUALIFIED_NAME: ClassVar[KeywordTextField] = KeywordTextField(
+        "qualifiedName", "qualifiedName", "qualifiedName.text"
+    )
+    """Unique fully-qualified name of the asset in Atlan."""
+
+    type_name: str = Field(default="Referenceable", description='Name of the type definition that defines this instance.'
+    )
+    _metadata_proxy: CustomMetadataProxy = PrivateAttr()
+    attributes: {{entity_def.name}}.Attributes = Field(
+        default_factory = lambda : {{entity_def.name}}.Attributes(),
+        description='Map of attributes in the instance and their values. The specific keys of this map will vary '
+                    'by type, so are described in the sub-types of this schema.',
+    )
+    business_attributes: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description='Map of custom metadata attributes and values defined on the entity.',
+    )
+    created_by: Optional[str] = Field(
+        default=None,
+        description='Username of the user who created the object.',
+        example='jsmith',
+    )
+    create_time: Optional[int] = Field(
+        default=None,
+        description='Time (epoch) at which this object was created, in milliseconds.',
+        example=1648852296555,
+    )
+    delete_handler: Optional[str] = Field(
+        default=None,
+        description="Details on the handler used for deletion of the asset.",
+        example="Hard",
+    )
+    guid: str = Field(
+        default="",
+        description='Unique identifier of the entity instance.',
+        example='917ffec9-fa84-4c59-8e6c-c7b114d04be3',
+    )
+    is_incomplete: Optional[bool] = Field(default=True, description='', example=True)
+    labels: Optional[List[str]] = Field(default=None, description='Arbitrary textual labels for the asset.')
+    relationship_attributes: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description='Map of relationships for the entity. The specific keys of this map will vary by type, '
+                    'so are described in the sub-types of this schema.',
+    )
+    status: Optional[EntityStatus] = Field(
+        default=None,
+        description="Status of the entity",
+        example=EntityStatus.ACTIVE
+    )
+    updated_by: Optional[str] = Field(
+        default=None,
+        description='Username of the user who last assets_updated the object.',
+        example='jsmith',
+    )
+    update_time: Optional[int] = Field(
+        default=None,
+        description='Time (epoch) at which this object was last assets_updated, in milliseconds.',
+        example=1649172284333,
+    )
+    version: Optional[int] = Field(
+        default=None, description='Version of this object.', example=2
+    )
+    atlan_tags: Optional[List[AtlanTag]] = Field(
+        default=None, description="Atlan tags",
+    )
+    classification_names: Optional[List[str]] = Field(
+        default=None, description="The names of the classifications that exist on the asset."
+    )
+    display_text: Optional[str] = Field(
+        default=None,
+        description="Human-readable name of the entity..",
+    )
+    entity_status: Optional[str] = Field(
+        default=None,
+        description="Status of the entity (if this is a related entity).",
+    )
+    relationship_guid: Optional[str] = Field(
+        default=None,
+        description="Unique identifier of the relationship (when this is a related entity).",
+    )
+    relationship_status: Optional[str] = Field(
+        default=None,
+        description="Status of the relationship (when this is a related entity).",
+    )
+    relationship_type: Optional[str] = Field(
+        default=None,
+        description="Status of the relationship (when this is a related entity).",
+    )
+    meaning_names: Optional[List[str]] = Field(
+        default=None, description="Names of assigned_terms that have been linked to this asset."
+    )
+    meanings: Optional[List[Meaning]] = Field(default=None, description="")
+    custom_attributes: Optional[Dict[str, Any]] = Field(default=None, description="")
+    scrubbed: Optional[bool] = Field(default=None, description="")
+    pending_tasks: Optional[List[str]] = Field(default=None)
+
+    unique_attributes: Optional[Dict[str, Any]] = Field(default=None)
+
+    append_relationship_attributes: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Map of append relationship attributes.",
+    )
+    remove_relationship_attributes: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Map of remove relationship attributes.",
+    )
+    semantic: Optional[SaveSemantic] = Field(
+        default=None,
+        exclude=True,
+        description=(
+            "Semantic for how this relationship should be saved, "
+            "if used in an asset request on which `.save()` is called."
+        ),
+    )
+    depth: Optional[int] = Field(
+        default=None,
+        description=(
+            "Depth of this asset within lineage. "
+            "Note: this will only be available in assets "
+            "retrieved via lineage, and will vary even for "
+            "the same asset depending on the starting point "
+            "of the lineage requested."
+        ),
+    )
+    immediate_upstream: Optional[List[LineageRef]] = Field(
+        default=None,
+        description=(
+            "Reference details about the asset(s) that are "
+            "immediately upstream of this asset within lineage. "
+            "Note: this will only be available in assets retrieved "
+            "via lineage when `immediate_upstream` is `True` "
+            "and could vary even for the same asset depending "
+            "on the starting point and depth of the lineage requested."
+        ),
+    )
+    immediate_downstream: Optional[List[LineageRef]] = Field(
+        default=None,
+        description=(
+            "Reference details about the asset(s) that are "
+            "immediately downstream of this asset within lineage. "
+            "Note: this will only be available in assets retrieved via "
+            "lineage when `immediate_downstream` is `True` "
+            "and could vary even for the same asset depending "
+            "on the starting point and depth of the lineage requested."
+        ),
+    )

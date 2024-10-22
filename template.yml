@@ -1,0 +1,50 @@
+# This AWS SAM template has been generated from your function's configuration. If
+# your function has one or more triggers, note that the AWS resources associated
+# with these triggers aren't fully specified in this template and include
+# placeholder values. Open this template in AWS Application Composer or your
+# favorite IDE and modify it to specify a serverless application with other AWS
+# resources.
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Serverless Application Model template describing your function.
+Resources:
+  challengefunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Description: ''
+      MemorySize: 300
+      Timeout: 900
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      EphemeralStorage:
+        Size: 512
+      Environment:
+        Variables:
+          ATLAN_API_KEY: >-
+            eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJsYmM5QTJfTjFOM0FqbElpWU9wTGNLTUw1RVRaV1I2Q2w5MFhqajBwQWlzIn0.eyJleHAiOjIxMzkxNjU4NjUsImlhdCI6MTcyOTE5Nzg2NSwianRpIjoiNDAyM2JlODEtYWQzOC00M2VkLTg0ZjctM2NkZWRkZDBkZWIwIiwiaXNzIjoiaHR0cHM6Ly90ZWNoLWNoYWxsZW5nZS5hdGxhbi5jb20vYXV0aC9yZWFsbXMvZGVmYXVsdCIsImF1ZCI6WyJyZWFsbS1tYW5hZ2VtZW50IiwiYWNjb3VudCJdLCJzdWIiOiI3MTk0NGVlZi1mNDUwLTRlZDMtYjllNy0yZWJkZDk0OTA5MWUiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJhcGlrZXktMWJlZGFjM2UtMjk2YS00MDVhLTkwODQtMTViZjdjOWYxZGQ3IiwicmVzb3VyY2VfYWNjZXNzIjp7InJlYWxtLW1hbmFnZW1lbnQiOnsicm9sZXMiOlsidmlldy1yZWFsbSIsInZpZXctaWRlbnRpdHktcHJvdmlkZXJzIiwibWFuYWdlLWlkZW50aXR5LXByb3ZpZGVycyIsImltcGVyc29uYXRpb24iLCJyZWFsbS1hZG1pbiIsImNyZWF0ZS1jbGllbnQiLCJtYW5hZ2UtdXNlcnMiLCJxdWVyeS1yZWFsbXMiLCJ2aWV3LWF1dGhvcml6YXRpb24iLCJxdWVyeS1jbGllbnRzIiwicXVlcnktdXNlcnMiLCJtYW5hZ2UtZXZlbnRzIiwibWFuYWdlLXJlYWxtIiwidmlldy1ldmVudHMiLCJ2aWV3LXVzZXJzIiwidmlldy1jbGllbnRzIiwibWFuYWdlLWF1dGhvcml6YXRpb24iLCJtYW5hZ2UtY2xpZW50cyIsInF1ZXJ5LWdyb3VwcyJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJlbWFpbCBwcm9maWxlIG9mZmxpbmVfYWNjZXNzIiwiY3JlYXRlZEF0IjoiMTcyOTE5Nzg2NDI2NCIsImNsaWVudElkIjoiYXBpa2V5LTFiZWRhYzNlLTI5NmEtNDA1YS05MDg0LTE1YmY3YzlmMWRkNyIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwiY2xpZW50SG9zdCI6IjEwLjE5MC4zNy42MyIsImdyb3VwcyI6W10sInJlYWxtIjoiZGVmYXVsdCIsInByZWZlcnJlZF91c2VybmFtZSI6InNlcnZpY2UtYWNjb3VudC1hcGlrZXktMWJlZGFjM2UtMjk2YS00MDVhLTkwODQtMTViZjdjOWYxZGQ3IiwiY2xpZW50QWRkcmVzcyI6IjEwLjE5MC4zNy42MyIsInVzZXJJZCI6IjcxOTQ0ZWVmLWY0NTAtNGVkMy1iOWU3LTJlYmRkOTQ5MDkxZSIsInVzZXJuYW1lIjoic2VydmljZS1hY2NvdW50LWFwaWtleS0xYmVkYWMzZS0yOTZhLTQwNWEtOTA4NC0xNWJmN2M5ZjFkZDcifQ.Xaj_sbe-JKYbjkOllJ0PMFElAzECEgjW0uzV3_28EF5CeNYdfujNKoQA6whC5Btdn_V2WloBDxDFvFMuiWff_aiyJ-Jmsmg7jZHq60en1Z1rfxkzfbRUcP2SegmJ903T3uGU0Z4cvzAOSueNoG1nA-NxkQSlBvG5_8nmLVkgu0uute8Ni1yLZQxOnh7u5KUMN65Z6j6y-ehejw6E911awVx0W2ggNpSmGVso_Tp9W9-WSH0SNDE10wdP3Ayp2wq6UN2rDYnfTwgPRqjjDHKbq9AEQf0pHu5RKftozuQNfKb68Dg38GZmlpBC3EVIaSAVo4k0vQccbTF0RGYBv8aqBQ
+          ATLAN_BASE_URL: https://tech-challenge.atlan.com/
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 21600
+        MaximumRetryAttempts: 2
+      PackageType: Zip
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+              Resource: arn:aws:logs:us-east-2:877154734156:*
+            - Effect: Allow
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource:
+                - >-
+                  arn:aws:logs:us-east-2:877154734156:log-group:/aws/lambda/challenge_function:*
+      RecursiveLoop: Terminate
+      SnapStart:
+        ApplyOn: None
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto

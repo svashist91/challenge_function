@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Atlan Pte. Ltd.
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Dict, List, Optional, Set, Union, Any
+
+from pydantic.v1 import BaseModel, Extra, Field, root_validator
+
+from pyatlan.model.enums import (
+    BadgeComparisonOperator,
+    BadgeConditionColor,
+    SourceCostUnitType,
+)
+from pyatlan.model.utils import to_camel_case
+from pyatlan.utils import validate_required_fields
+
+class AtlanObject(BaseModel):
+    class Config:
+        allow_population_by_field_name = True
+        alias_generator = to_camel_case
+        extra = Extra.ignore
+        json_encoders = {datetime: lambda v: int(v.timestamp() * 1000)}
+        validate_assignment = True
+
+    @root_validator(pre=True)
+    def flatten_structs_attributes(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Flatten the 'attributes' of the struct models.
+
+        :param values: dictionary containing the attributes.
+        :returns: modified dictionary with attributes flattened.
+        """
+        attributes = values.pop("attributes", {})
+        values = {**values, **attributes}
+        return values
+
+
+{% for struct in struct_defs %}
+class {{struct.name}}(AtlanObject):
+    """Description"""
+    {%- if struct.name == "BadgeCondition" %}
+    @classmethod
+    def create(
+        cls,
+        *,
+        badge_condition_operator: BadgeComparisonOperator,
+        badge_condition_value: str,
+        badge_condition_colorhex: Union[BadgeConditionColor, str]
+    ) -> "BadgeCondition":
+        validate_required_fields(
+            [
+                "badge_condition_operator",
+                "badge_condition_value",
+                "badge_condition_colorhex",
+            ],
+            [badge_condition_operator, badge_condition_value, badge_condition_colorhex],
+        )
+        return cls(
+            badge_condition_operator=badge_condition_operator.value,
+            badge_condition_value=badge_condition_value,
+            badge_condition_colorhex=badge_condition_colorhex.value
+            if isinstance(badge_condition_colorhex, BadgeConditionColor)
+            else badge_condition_colorhex,
+        )
+    {% endif %}
+    {%- for attribute_def in struct.attribute_defs %}
+    {%- set type = attribute_def.type_name | get_type %}
+    {{attribute_def.name | to_snake_case }}: {% if attribute_def.is_optional %}Optional[{% endif %}{{type}}{% if attribute_def.is_optional %}]{% endif %} = Field({% if attribute_def.is_optional %}default=None,{% endif %} description='' )
+    {%- endfor %}
+{% endfor %}
+
+{% for struct in struct_defs %}
+{{struct.name}}.update_forward_refs()
+{% endfor %}
